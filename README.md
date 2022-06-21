@@ -1,6 +1,6 @@
-# Improvements
+# Terraform Provider Cidr-Reservator (Terraform Plugin SDK)
 
-- read all baseCidr files and check by their name, that the base ranges do not overlap!
-- check that a network request prefix can never be bigger (or even as big) as the full base cidr range!
-- allow array of baseCidrs! if first is exhausted, use second!
-- upload the list of reserved cidr ranges sorted!
+Terraform Provider for reserving Cidr Ranges in a central location (currently only GCS Buckets are supported).
+When reserving a new Cidr within a Base-Cidr the next available Cidr is calculated. Possible gaps are filled if possible. If the Base-Cidr is exhausted, an error is thrown.
+
+

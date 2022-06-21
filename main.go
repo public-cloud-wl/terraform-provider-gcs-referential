@@ -1,23 +1,45 @@
-// main.go
 package main
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"flag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"github.com/sbehl27-org/terraform-provider-cidr-reservator/internal/provider"
 )
 
-func main() {
-	//_ = resourceServerCreate(nil, nil)
-	plugin.Serve(&plugin.ServeOpts{
-		ProviderFunc: func() *schema.Provider {
-			return Provider()
-		},
-	})
+// Run "go generate" to format example terraform files and generate the docs for the registry/website
 
-	//cidrs := map[string]string{"lappen": "10.5.0.0/26", "lulut": "10.5.1.0/24", "test": "10.5.0.64/26"}
-	//calculator, _ := cidrCalculator.New(&cidrs, 24, "10.5.0.0/16")
-	//netmask, _ := calculator.GetNextNetmask()
-	////connector := connector.New("test-cidr-reservator", "10.5.0.0/16")
-	////netmask, err := cidrCalculator.GetNextNetmask()
-	//println(netmask)
+// If you do not have terraform installed, you can remove the formatting command, but its suggested to
+// ensure the documentation is formatted properly.
+//go:generate terraform fmt -recursive ./examples/
+
+// Run the docs generation tool, check its repository for more information on how it works and how docs
+// can be customized.
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+
+var (
+	// these will be set by the goreleaser configuration
+	// to appropriate values for the compiled binary
+	version string = "dev"
+
+	// goreleaser can also pass the specific commit if you want
+	// commit  string = ""
+)
+
+// TODO: Implement terraform import!!!
+func main() {
+	var debugMode bool
+
+	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
+	flag.Parse()
+
+	opts := &plugin.ServeOpts{
+		Debug: debugMode,
+
+		// TODO: update this string with the full name of your provider as used in your configs
+		ProviderAddr: "registry.terraform.io/hashicorp/cidr-reservator",
+
+		ProviderFunc: provider.New(version),
+	}
+
+	plugin.Serve(opts)
 }
