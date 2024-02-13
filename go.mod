@@ -1,9 +1,9 @@
-module github.com/sbehl27-org/terraform-provider-cidr-reservator
+module github.com/public-cloud-wl/terraform-provider-gcsreferential
 
 go 1.19
 
 require (
-	cloud.google.com/go/storage v1.28.1
+	cloud.google.com/go/storage v1.38.0
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
