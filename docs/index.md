@@ -21,4 +21,4 @@ or you use the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to provider
 
 ### Required
 
-- `reservator_bucket` (String) - The name of the GCP bucket to use. 
+- `referential_bucket` (String) - The name of the GCP bucket to use. 

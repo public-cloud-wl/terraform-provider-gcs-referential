@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-func resourceServer() *schema.Resource {
+func networkRequest() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceServerCreate,
-		ReadContext:   resourceServerRead,
-		UpdateContext: resourceServerUpdate,
-		DeleteContext: resourceServerDelete,
+		CreateContext: networkRequestCreate,
+		ReadContext:   networkRequestRead,
+		UpdateContext: networkRequestUpdate,
+		DeleteContext: networkRequestDelete,
 
 		Schema: map[string]*schema.Schema{
 			"prefix_length": {
@@ -103,7 +103,7 @@ func retry(toRetry func() error) error {
 	return err
 }
 
-func resourceServerCreate(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
+func networkRequestCreate(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	err := retry(innerResourceServerCreate(ctx, data, m))
 	if err != nil {
@@ -151,7 +151,7 @@ func innerResourceServerCreate(ctx context.Context, data *schema.ResourceData, m
 	}
 }
 
-func resourceServerRead(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
+func networkRequestRead(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	idContent := strings.Split(data.Id(), ":")
 	reservatorBucket := idContent[0]
@@ -183,7 +183,7 @@ func resourceServerRead(ctx context.Context, data *schema.ResourceData, m interf
 	return diags
 }
 
-func resourceServerUpdate(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
+func networkRequestUpdate(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	err := retry(innerResourceServerUpdate(ctx, data, m))
 	if err != nil {
@@ -242,7 +242,7 @@ func innerResourceServerUpdate(ctx context.Context, data *schema.ResourceData, m
 	}
 }
 
-func resourceServerDelete(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
+func networkRequestDelete(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	err := retry(innerResourceServerDelete(ctx, data, m))
 	if err != nil {
