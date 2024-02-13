@@ -10,6 +10,9 @@ import (
 	"io"
 	"strings"
 	"time"
+  "os"
+  "google.golang.org/api/option"
+  "golang.org/x/oauth2"
 )
 
 type GcpConnector struct {
@@ -28,10 +31,25 @@ func New(bucketName string, baseCidr string) GcpConnector {
 	return GcpConnector{bucketName, baseCidr, fileName, -1}
 }
 
+func getStorageClient(ctx context.Context) (*storage.Client, error) {
+  access_token := os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN")
+  if access_token!= "" {
+    var tokenSource oauth2.TokenSource
+    var credOptions []option.ClientOption
+    tokenSource = oauth2.StaticTokenSource(&oauth2.Token{
+          AccessToken: access_token,
+    })
+    credOptions = append(credOptions, option.WithTokenSource(tokenSource))
+    return storage.NewClient(ctx, credOptions...)
+  } else {
+    return storage.NewClient(ctx)
+  }
+}
+
 func (gcp *GcpConnector) ReadRemote(ctx context.Context) (*NetworkConfig, error) {
 	// Creates a client.
 	networkConfig := NetworkConfig{}
-	client, err := storage.NewClient(ctx)
+	client, err := getStorageClient(ctx)
 	if err != nil {
 		return &networkConfig, err
 	}
@@ -64,7 +82,7 @@ func (gcp *GcpConnector) ReadRemote(ctx context.Context) (*NetworkConfig, error)
 
 func (gcp *GcpConnector) WriteRemote(networkConfig *NetworkConfig, ctx context.Context) error {
 	// Creates a client.
-	client, err := storage.NewClient(ctx)
+	client, err := getStorageClient(ctx)
 	if err != nil {
 		return err
 	}

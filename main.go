@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/sbehl27-org/terraform-provider-cidr-reservator/internal/provider"
+	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for the registry/website

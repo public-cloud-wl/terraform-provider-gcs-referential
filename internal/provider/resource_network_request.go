@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/sbehl27-org/terraform-provider-cidr-reservator/internal/provider/cidrCalculator"
-	"github.com/sbehl27-org/terraform-provider-cidr-reservator/internal/provider/connector"
+	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider/cidrCalculator"
+	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider/connector"
 	"strconv"
 	"strings"
 )
