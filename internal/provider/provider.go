@@ -16,7 +16,7 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"gcsreferantial_network_request": networkRequest(),
+				"gcsreferential_network_request": networkRequest(),
 			},
 			ConfigureContextFunc: providerConfigure,
 		}
