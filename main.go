@@ -36,7 +36,7 @@ func main() {
 		Debug: debugMode,
 
 		// TODO: update this string with the full name of your provider as used in your configs
-		ProviderAddr: "registry.terraform.io/hashicorp/cidr-reservator",
+		ProviderAddr: "registry.terraform.io/providers/public-cloud-wl/gcsreferential",
 
 		ProviderFunc: provider.New(version),
 	}
