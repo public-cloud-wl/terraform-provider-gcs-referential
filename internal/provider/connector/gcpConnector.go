@@ -119,7 +119,9 @@ func (gcp *GcpConnector) RecursiveRetryReadWrite(ctx context.Context, retryCount
 	}
 	networkConfig, err := gcp.ReadRemote(ctx)
 	if err != nil {
-		return err
+    sleepDuration, _ := time.ParseDuration(fmt.Sprintf("%ds", 2*retryCount))
+    time.Sleep(sleepDuration)
+    return gcp.RecursiveRetryReadWrite(ctx, retryCount+1)
 	}
 	sleepDuration, _ := time.ParseDuration(fmt.Sprintf("%ds", 2*retryCount))
 	time.Sleep(sleepDuration)
