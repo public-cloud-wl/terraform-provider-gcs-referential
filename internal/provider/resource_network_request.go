@@ -10,6 +10,7 @@ import (
 	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider/connector"
 	"strconv"
 	"strings"
+  "time"
 )
 
 func networkRequest() *schema.Resource {
@@ -99,6 +100,9 @@ func retry(toRetry func() error) error {
 			break
 		}
 		n++
+    fmt.Printf("Issue on request retry: %d, -> try again", n)
+    sleepDuration, _ := time.ParseDuration(fmt.Sprintf("%ds", 2*n))
+    time.Sleep(sleepDuration)
 	}
 	return err
 }
@@ -138,6 +142,7 @@ func innerResourceServerCreate(ctx context.Context, data *schema.ResourceData, m
 			return err
 		}
 		networkConfig.Subnets[netmaskId] = nextNetmask
+    //err = gcpConnector.RecursiveRetryReadWrite
 		err = gcpConnector.WriteRemote(networkConfig, ctx)
 		if err != nil {
 			return err
