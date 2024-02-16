@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+  
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider/cidrCalculator"
 	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider/connector"
-	"strconv"
-	"strings"
-  "time"
-  "log"
+	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider/utils"
 )
 
 func networkRequest() *schema.Resource {
@@ -92,25 +92,9 @@ func readRemote(ctx context.Context, data *schema.ResourceData, m interface{}) (
 	return networkConfig, &gcpConnector, nil
 }
 
-func retry(toRetry func() error) error {
-	n := 0
-	var err error
-	for n < 10 {
-		err = toRetry()
-		if err == nil {
-			break
-		}
-		n++
-    log.Printf("[DEBUG] Issue on request retry: %d, -> try again", n)
-    sleepDuration, _ := time.ParseDuration(fmt.Sprintf("%ds", 2*n))
-    time.Sleep(sleepDuration)
-	}
-	return err
-}
-
 func networkRequestCreate(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	err := retry(innerResourceServerCreate(ctx, data, m))
+	err := utils.retry(innerResourceServerCreate(ctx, data, m))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -143,7 +127,7 @@ func innerResourceServerCreate(ctx context.Context, data *schema.ResourceData, m
 			return err
 		}
 		networkConfig.Subnets[netmaskId] = nextNetmask
-    //err = gcpConnector.RecursiveRetryReadWrite
+		//err = gcpConnector.Recursiveutils.retryReadWrite
 		err = gcpConnector.WriteRemote(networkConfig, ctx)
 		if err != nil {
 			return err
@@ -191,7 +175,7 @@ func networkRequestRead(ctx context.Context, data *schema.ResourceData, m interf
 
 func networkRequestUpdate(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	err := retry(innerResourceServerUpdate(ctx, data, m))
+	err := utils.retry(innerResourceServerUpdate(ctx, data, m))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -250,7 +234,7 @@ func innerResourceServerUpdate(ctx context.Context, data *schema.ResourceData, m
 
 func networkRequestDelete(ctx context.Context, data *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	err := retry(innerResourceServerDelete(ctx, data, m))
+	err := utils.retry(innerResourceServerDelete(ctx, data, m))
 	if err != nil {
 		return diag.FromErr(err)
 	}

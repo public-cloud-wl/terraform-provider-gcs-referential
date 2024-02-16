@@ -22,8 +22,7 @@ func New(version string) func() *schema.Provider {
 		}
 	}
 }
-
-func providerConfigure(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func configure(version string, p *schema.Provider) func(context.Context, data *schema.ResourceData) (any, diag.Diagnostics) {
 	cidrReservatorBucket := data.Get("referential_bucket").(string)
 	var diags diag.Diagnostics
 	if cidrReservatorBucket == "" {

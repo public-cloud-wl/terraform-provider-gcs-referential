@@ -1,18 +1,17 @@
 package connector
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"io"
+	"os"
 	"strings"
-	"time"
-  "os"
-  "google.golang.org/api/option"
-  "golang.org/x/oauth2"
+
+	"cloud.google.com/go/storage"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"golang.org/x/oauth2"
+	"google.golang.org/api/option"
 )
 
 type GcpConnector struct {
@@ -32,18 +31,18 @@ func New(bucketName string, baseCidr string) GcpConnector {
 }
 
 func getStorageClient(ctx context.Context) (*storage.Client, error) {
-  access_token := os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN")
-  if access_token!= "" {
-    var tokenSource oauth2.TokenSource
-    var credOptions []option.ClientOption
-    tokenSource = oauth2.StaticTokenSource(&oauth2.Token{
-          AccessToken: access_token,
-    })
-    credOptions = append(credOptions, option.WithTokenSource(tokenSource))
-    return storage.NewClient(ctx, credOptions...)
-  } else {
-    return storage.NewClient(ctx)
-  }
+	access_token := os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN")
+	if access_token != "" {
+		var tokenSource oauth2.TokenSource
+		var credOptions []option.ClientOption
+		tokenSource = oauth2.StaticTokenSource(&oauth2.Token{
+			AccessToken: access_token,
+		})
+		credOptions = append(credOptions, option.WithTokenSource(tokenSource))
+		return storage.NewClient(ctx, credOptions...)
+	} else {
+		return storage.NewClient(ctx)
+	}
 }
 
 func (gcp *GcpConnector) ReadRemote(ctx context.Context) (*NetworkConfig, error) {
@@ -106,35 +105,6 @@ func (gcp *GcpConnector) WriteRemote(networkConfig *NetworkConfig, ctx context.C
 	}
 	return nil
 }
-
-//func (gcp GcpConnector) lockCidrProviderJson(bucket *storage.BucketHandle, bucketFile string, ctx context.Context) error {
-//	writer := bucket.Object(fmt.Sprintf("%s.lock", bucketFile)).If(storage.Conditions{GenerationMatch: 0}).NewWriter(ctx)
-//	defer writer.Close()
-//	return gcp.recursiveTryLock(writer, 0)
-//}
-
-func (gcp *GcpConnector) RecursiveRetryReadWrite(ctx context.Context, retryCount int8) error {
-	if retryCount > 4 {
-		return errors.New("Failed to write file after 4 retries!!!")
-	}
-	networkConfig, err := gcp.ReadRemote(ctx)
-	if err != nil {
-    sleepDuration, _ := time.ParseDuration(fmt.Sprintf("%ds", 2*retryCount))
-    time.Sleep(sleepDuration)
-    return gcp.RecursiveRetryReadWrite(ctx, retryCount+1)
-	}
-	sleepDuration, _ := time.ParseDuration(fmt.Sprintf("%ds", 2*retryCount))
-	time.Sleep(sleepDuration)
-	err = gcp.WriteRemote(networkConfig, ctx)
-	if err != nil {
-		return gcp.RecursiveRetryReadWrite(ctx, retryCount+1)
-	}
-	return nil
-}
-
-//func (gcp GcpConnector) deleteLock(bucket *storage.BucketHandle, bucketFile string, ctx context.Context) {
-//	bucket.Object(fmt.Sprintf("%s.lock", bucketFile)).Delete(ctx)
-//}
 
 func readNetsegmentJson(ctx context.Context, cidrProviderBucket string, netsegmentName string) (NetworkConfig, error) {
 	return NetworkConfig{}, nil

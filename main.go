@@ -1,7 +1,11 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package main
 
 import (
 	"flag"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider"
 )
@@ -25,7 +29,6 @@ var (
 	// commit  string = ""
 )
 
-// TODO: Implement terraform import!!!
 func main() {
 	var debugMode bool
 
