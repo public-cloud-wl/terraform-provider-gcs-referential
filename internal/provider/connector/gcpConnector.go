@@ -14,20 +14,29 @@ import (
 	"google.golang.org/api/option"
 )
 
-type GcpConnector struct {
-	BucketName    string
+type GcpConnectorGeneric struct {
+	BucketName   string
+	fullFilePath string
+	generation   int64
+}
+
+type GcpConnectorNetwork struct {
+  GcpConnectorGeneric
 	BaseCidrRange string
-	FileName      string
-	generation    int64
 }
 
 type NetworkConfig struct {
 	Subnets map[string]string `json:"subnets"`
 }
 
-func New(bucketName string, baseCidr string) GcpConnector {
+
+func NewGeneric(bucketName string, fullFilePath string) GcpConnectorGeneric{
+  return GcpConnectorGeneric{bucketName, fullFilePath, -1}  
+}
+
+func NewNetwork(bucketName string, baseCidr string) GcpConnectorNetwork {
 	fileName := fmt.Sprintf("cidr-reservation/baseCidr-%s.json", strings.Replace(strings.Replace(baseCidr, ".", "-", -1), "/", "-", -1))
-	return GcpConnector{bucketName, baseCidr, fileName, -1}
+	return GcpConnectorNetwork{bucketName, fileName, -1, baseCidr}
 }
 
 func getStorageClient(ctx context.Context) (*storage.Client, error) {
@@ -45,7 +54,7 @@ func getStorageClient(ctx context.Context) (*storage.Client, error) {
 	}
 }
 
-func (gcp *GcpConnector) ReadRemote(ctx context.Context) (*NetworkConfig, error) {
+func (gcp *GcpConnectorGeneric) ReadRemote(ctx context.Context) (*NetworkConfig, error) {
 	// Creates a client.
 	networkConfig := NetworkConfig{}
 	client, err := getStorageClient(ctx)
@@ -59,7 +68,7 @@ func (gcp *GcpConnector) ReadRemote(ctx context.Context) (*NetworkConfig, error)
 	if err != nil {
 		return nil, err
 	}
-	objectHandle := bucket.Object(gcp.FileName)
+	objectHandle := bucket.Object(gcp.fullFilePath)
 	attrs, err := objectHandle.Attrs(ctx)
 	if err == nil {
 		gcp.generation = attrs.Generation
@@ -79,7 +88,7 @@ func (gcp *GcpConnector) ReadRemote(ctx context.Context) (*NetworkConfig, error)
 	return &networkConfig, nil
 }
 
-func (gcp *GcpConnector) WriteRemote(networkConfig *NetworkConfig, ctx context.Context) error {
+func (gcp *GcpConnectorGeneric) WriteRemote(networkConfig *NetworkConfig, ctx context.Context) error {
 	// Creates a client.
 	client, err := getStorageClient(ctx)
 	if err != nil {
@@ -90,9 +99,9 @@ func (gcp *GcpConnector) WriteRemote(networkConfig *NetworkConfig, ctx context.C
 	bucket := client.Bucket(gcp.BucketName)
 	var writer *storage.Writer
 	if gcp.generation == -1 {
-		writer = bucket.Object(gcp.FileName).If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
+		writer = bucket.Object(gcp.fullFilePath).If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
 	} else {
-		writer = bucket.Object(gcp.FileName).If(storage.Conditions{GenerationMatch: gcp.generation}).NewWriter(ctx)
+		writer = bucket.Object(gcp.fullFilePath).If(storage.Conditions{GenerationMatch: gcp.generation}).NewWriter(ctx)
 	}
 	marshalled, err := json.Marshal(networkConfig)
 	if err != nil {

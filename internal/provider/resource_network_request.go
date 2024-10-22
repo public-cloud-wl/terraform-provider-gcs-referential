@@ -52,7 +52,7 @@ func importState(ctx context.Context, data *schema.ResourceData, i interface{}) 
 	reservatorBucket := idContent[0]
 	baseCidr := idContent[1]
 	netmaskId := idContent[2]
-	gcpConnector := connector.New(reservatorBucket, baseCidr)
+	gcpConnector := connector.NewNetwork(reservatorBucket, baseCidr)
 	networkConfig, err := gcpConnector.ReadRemote(ctx)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func importState(ctx context.Context, data *schema.ResourceData, i interface{}) 
 
 func readRemote(ctx context.Context, data *schema.ResourceData, m interface{}) (*connector.NetworkConfig, *connector.GcpConnector, error) {
 	cidrProviderBucket := m.(string)
-	gcpConnector := connector.New(cidrProviderBucket, data.Get("base_cidr").(string))
+	gcpConnector := connector.NewNetwork(cidrProviderBucket, data.Get("base_cidr").(string))
 	networkConfig, err := gcpConnector.ReadRemote(ctx)
 	if err != nil {
 		if err.Error() == "storage: object doesn't exist" {
@@ -147,7 +147,7 @@ func networkRequestRead(ctx context.Context, data *schema.ResourceData, m interf
 	reservatorBucket := idContent[0]
 	baseCidr := idContent[1]
 	netmaskId := idContent[2]
-	gcpConnector := connector.New(reservatorBucket, baseCidr)
+	gcpConnector := connector.NewNetwork(reservatorBucket, baseCidr)
 	networkConfig, err := gcpConnector.ReadRemote(ctx)
 	if err != nil {
 		return diag.FromErr(err)
