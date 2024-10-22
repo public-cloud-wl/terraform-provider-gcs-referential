@@ -23,11 +23,11 @@ func New(version string) func() *schema.Provider {
 	}
 }
 func configure(version string, p *schema.Provider) func(context.Context, data *schema.ResourceData) (any, diag.Diagnostics) {
-	cidrReservatorBucket := data.Get("referential_bucket").(string)
+	gcsreferentialBucket := data.Get("referential_bucket").(string)
 	var diags diag.Diagnostics
-	if cidrReservatorBucket == "" {
+	if gcsreferentialBucket == "" {
 		return nil, diag.Errorf("referential_bucket is not set!")
 	}
 
-	return cidrReservatorBucket, diags
+	return gcsreferentialBucket, diags
 }
