@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -22,7 +23,8 @@ func New(version string) func() *schema.Provider {
 		}
 	}
 }
-func configure(version string, p *schema.Provider) func(context.Context, data *schema.ResourceData) (any, diag.Diagnostics) {
+
+func providerConfigure(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	gcsreferentialBucket := data.Get("referential_bucket").(string)
 	var diags diag.Diagnostics
 	if gcsreferentialBucket == "" {
