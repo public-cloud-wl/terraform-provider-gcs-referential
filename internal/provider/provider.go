@@ -2,34 +2,51 @@ package provider
 
 import (
 	"context"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func New(version string) func() *schema.Provider {
-	return func() *schema.Provider {
-		return &schema.Provider{
-			Schema: map[string]*schema.Schema{
-				"referential_bucket": {
-					Type:     schema.TypeString,
-					Required: true,
-				},
+// Define the Provider struct
+type GCSReferentialProvider struct{}
+
+// Define the Provider schema
+func (p *GCSReferentialProvider) Schema(ctx context.Context) (types.Schema, diag.Diagnostics) {
+	return types.Schema{
+		Attributes: map[string]types.Attribute{
+			"reservator_bucket": {
+				Type:     types.StringType,
+				Required: true,
 			},
-			ResourcesMap: map[string]*schema.Resource{
-				"gcsreferential_network_request": networkRequest(),
-			},
-			ConfigureContextFunc: providerConfigure,
-		}
+		},
+	}, nil
+}
+
+// Configure function for the provider
+func (p *GCSReferentialProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var diags diag.Diagnostics
+
+	cidrReservatorBucket := req.Config.GetAttribute("reservator_bucket").(string)
+	if cidrReservatorBucket == "" {
+		diags = append(diags, diag.NewErrorDiagnostic("reservator_bucket is not set!"))
+		resp.Diagnostics = diags
+		return
+	}
+
+	// Store the bucket value in the response
+	resp.Data = cidrReservatorBucket
+}
+
+// New function to create the provider
+func New() func() provider.Provider {
+	return func() provider.Provider {
+		return &GCSReferentialProvider{}
 	}
 }
 
-func providerConfigure(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	gcsreferentialBucket := data.Get("referential_bucket").(string)
-	var diags diag.Diagnostics
-	if gcsreferentialBucket == "" {
-		return nil, diag.Errorf("referential_bucket is not set!")
-	}
-
-	return gcsreferentialBucket, diags
+// Define the resource
+func resourceServer() resource.Resource {
+	// Implement your resource logic here
+	return nil // Replace with actual resource implementation
 }
