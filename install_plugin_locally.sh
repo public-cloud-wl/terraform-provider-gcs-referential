@@ -1,8 +1,10 @@
 #!/bin/bash
 
-rm terraform-provider-gcs-referential || true
-rm ~/.terraform.d/plugins/terraform-example.com/test/gcs-referential/0.0.1/darwin_arm64/terraform-provider-gcs-referential || true
+providerName=terraform-provider-gcsreferential
+
+rm $providerName || true
+pluginDir=/home/admnet/git/worldline/ccc/terraform/projects/maarc-tests/.terraform/providers/registry.terraform.io/public-cloud-wl/gcsreferential/0.0.8/linux_amd64/
+rm $pluginDir/$providerName* || true
 go build
-pluginDir=~/.terraform.d/plugins/terraform-example.com/test/gcs-referential/0.0.1/darwin_arm64/
 mkdir -p $pluginDir
-cp terraform-provider-gcs-referential $pluginDir/
+cp $providerName $pluginDir/

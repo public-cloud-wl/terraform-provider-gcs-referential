@@ -30,12 +30,14 @@ type NetworkConfig struct {
 }
 
 func NewGeneric(BucketName string, FullFilePath string) GcpConnectorGeneric {
-	return GcpConnectorGeneric{BucketName, FullFilePath, -1}
+	c := GcpConnectorGeneric{BucketName, FullFilePath, -1}
+
+	return c
 }
 
 func NewNetwork(bucketName string, baseCidr string) GcpConnectorNetwork {
 	fileName := fmt.Sprintf("cidr-reservation/baseCidr-%s.json", strings.Replace(strings.Replace(baseCidr, ".", "-", -1), "/", "-", -1))
-	return GcpConnectorNetwork{BucketName: bucketName, FullFilePath: fileName, Generation: -1, BaseCidrRange: baseCidr}
+	return GcpConnectorNetwork{GcpConnectorGeneric{bucketName, fileName, -1}, baseCidr}
 }
 
 func getStorageClient(ctx context.Context) (*storage.Client, error) {
@@ -53,19 +55,15 @@ func getStorageClient(ctx context.Context) (*storage.Client, error) {
 	}
 }
 
-func (gcp *GcpConnectorGeneric) ReadRemote(ctx context.Context) (*NetworkConfig, error) {
-	// Creates a client.
-	networkConfig := NetworkConfig{}
+func (gcp *GcpConnectorGeneric) Read(ctx context.Context, data interface{}) error {
 	client, err := getStorageClient(ctx)
 	if err != nil {
-		return &networkConfig, err
+		return err
 	}
 	defer client.Close()
-
-	// Creates a Bucket instance.
 	bucket := client.Bucket(gcp.BucketName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	objectHandle := bucket.Object(gcp.FullFilePath)
 	attrs, err := objectHandle.Attrs(ctx)
@@ -74,20 +72,18 @@ func (gcp *GcpConnectorGeneric) ReadRemote(ctx context.Context) (*NetworkConfig,
 	}
 	rc, err := objectHandle.NewReader(ctx)
 	if err != nil {
-		return &networkConfig, err
+		return err
 	}
 	defer rc.Close()
 	slurp, err := io.ReadAll(rc)
 	if err != nil {
-		return &networkConfig, err
+		return err
 	}
-	if err := json.Unmarshal(slurp, &networkConfig); err != nil {
-		return &networkConfig, err
-	}
-	return &networkConfig, nil
+	json.Unmarshal(slurp, &data)
+	return nil
 }
 
-func (gcp *GcpConnectorGeneric) WriteRemote(networkConfig *NetworkConfig, ctx context.Context) error {
+func (gcp *GcpConnectorGeneric) Write(ctx context.Context, data interface{}) error {
 	// Creates a client.
 	client, err := getStorageClient(ctx)
 	if err != nil {
@@ -102,22 +98,26 @@ func (gcp *GcpConnectorGeneric) WriteRemote(networkConfig *NetworkConfig, ctx co
 	} else {
 		writer = bucket.Object(gcp.FullFilePath).If(storage.Conditions{GenerationMatch: gcp.Generation}).NewWriter(ctx)
 	}
-	marshalled, err := json.Marshal(networkConfig)
+	marshalled, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 	_, _ = writer.Write(marshalled)
 	if err := writer.Close(); err != nil {
-		tflog.Error(ctx, "Failed to write file to GCP", map[string]interface{}{"error": err, "Generation": gcp.Generation})
+		tflog.Error(ctx, "Failed to write file to GCP", map[string]interface{}{"error": err, "Generation": gcp.Generation, "Bucket": gcp.BucketName, "FilePath": gcp.FullFilePath})
 		return err
 	}
 	return nil
 }
 
-func readNetsegmentJson(ctx context.Context, cidrProviderBucket string, netsegmentName string) (NetworkConfig, error) {
-	return NetworkConfig{}, nil
-	//return readRemote(cidrProviderBucket, fmt.Sprintf("gcp-cidr-provider/%s.json", netsegmentName), ctx)
+func (gcp *GcpConnectorGeneric) Delete(ctx context.Context) error {
+	// Creates a client.
+	client, err := getStorageClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+	// Creates a Bucket instance.
+	bucket := client.Bucket(gcp.BucketName)
+	return bucket.Object(gcp.FullFilePath).Delete(ctx)
 }
-
-// TODO: implement!
-func uploadNewNetsegmentJson() {}

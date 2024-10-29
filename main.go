@@ -4,9 +4,11 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/public-cloud-wl/terraform-provider-gcsreferential/internal/provider"
 )
 
@@ -35,14 +37,15 @@ func main() {
 	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	opts := &plugin.ServeOpts{
+	opts := providerserver.ServeOpts{
 		Debug: debugMode,
 
 		// TODO: update this string with the full name of your provider as used in your configs
-		ProviderAddr: "registry.terraform.io/providers/public-cloud-wl/gcsreferential",
-
-		ProviderFunc: provider.New(version),
+		Address: "registry.terraform.io/public-cloud-wl/gcsreferential",
 	}
 
-	plugin.Serve(opts)
+	err := providerserver.Serve(context.Background(), provider.New(version), opts)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
