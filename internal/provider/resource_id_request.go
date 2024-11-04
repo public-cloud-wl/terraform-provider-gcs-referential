@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -13,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	IdPoolTools "github.com/public-cloud-wl/tools/idPoolTools"
-	"github.com/public-cloud-wl/tools/utils"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -85,12 +85,20 @@ func (r *IdRequestResource) Create(ctx context.Context, req resource.CreateReque
 	var err error
 	var poolModel IdPoolResourceModel
 	var pool IdPoolTools.IDPool
+	var lockId uuid.UUID
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	poolModel.Name = data.Pool
-	err = utils.Retry(func() error { return readRemoteIdPool(ctx, &poolModel, r.providerData, &pool) }, NumberOfRetry)
+	gcpConnector := getPoolConnector(ctx, &poolModel, r.providerData, &pool)
+	lockId, err = gcpConnector.WaitForlock(ctx, Timeout)
+	if err != nil {
+		resp.Diagnostics.AddError("Cannot put lock to create the id_request :", err.Error())
+		return
+	}
+	defer gcpConnector.Unlock(ctx, lockId)
+	err = readRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 	if err != nil {
 		resp.Diagnostics.AddError("Cannot find pool to make the id_request on", err.Error())
 		return
@@ -106,7 +114,7 @@ func (r *IdRequestResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 	data.RequestedId = types.Int64Value(int64(generatedId))
-	err = utils.Retry(func() error { return writeRemoteIdPool(ctx, &poolModel, r.providerData, &pool) })
+	err = writeRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 	if err != nil {
 		resp.Diagnostics.AddError("Cannot update pool on the referential_bucket", err.Error())
 		return
@@ -120,12 +128,13 @@ func (r *IdRequestResource) Read(ctx context.Context, req resource.ReadRequest, 
 	var err error
 	var poolModel IdPoolResourceModel
 	var pool IdPoolTools.IDPool
+	var lockId uuid.UUID
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	poolModel.Name = data.Pool
-	err = utils.Retry(func() error { return readRemoteIdPool(ctx, &poolModel, r.providerData, &pool) }, NumberOfRetry)
+	err = readRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 	if err != nil {
 		resp.Diagnostics.AddError("Cannot find pool to make the id_request on", err.Error())
 		return
@@ -144,11 +153,17 @@ func (r *IdRequestResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 func (r *IdRequestResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data IdRequestResourceModel
+	//var err error
+	//var poolModel IdPoolResourceModel
+	//var pool IdPoolTools.IDPool
+	//var lockId uuid.UUID
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// Save data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *IdRequestResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -156,26 +171,36 @@ func (r *IdRequestResource) Delete(ctx context.Context, req resource.DeleteReque
 	var err error
 	var poolModel IdPoolResourceModel
 	var pool IdPoolTools.IDPool
+	var lockId uuid.UUID
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	poolModel.Name = data.Pool
-	err = utils.Retry(func() error { return readRemoteIdPool(ctx, &poolModel, r.providerData, &pool) }, NumberOfRetry)
+	gcpConnector := getPoolConnector(ctx, &poolModel, r.providerData, &pool)
+	lockId, err = gcpConnector.WaitForlock(ctx, Timeout)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot find pool to make the id_request on", err.Error())
+		resp.Diagnostics.AddError("Cannot put lock to create the id_request :", err.Error())
+		return
+	}
+	defer gcpConnector.Unlock(ctx, lockId)
+
+	localerr := readRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
+	if localerr != nil {
+		resp.Diagnostics.AddError("Cannot get id_pool from id_request.pool on the referential_bucket", err.Error())
 		return
 	}
 	value, ok := pool.Members[data.Id.ValueString()]
 	if !ok {
-		resp.Diagnostics.AddError("Cannot find your id_request on the pool", err.Error())
+		resp.Diagnostics.AddError("Cannot find your id_request in the referential_bucket", err.Error())
 		return
 	}
-	pool.Remove(value)
+	pool.Release(value)
 	poolJson, _ := json.Marshal(pool)
 	tflog.Debug(ctx, string(poolJson))
-	err = utils.Retry(func() error { return writeRemoteIdPool(ctx, &poolModel, r.providerData, &pool) })
+	err = writeRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
+
 	if err != nil {
 		resp.Diagnostics.AddError("Cannot update pool on the referential_bucket", err.Error())
 		return

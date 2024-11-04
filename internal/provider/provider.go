@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -16,6 +17,7 @@ var _ provider.Provider = &GCSReferentialProvider{}
 
 const ProviderName = "gcsreferential"
 const NumberOfRetry = int(10)
+const Timeout = time.Minute * 5
 
 type GCSReferentialProvider struct {
 	version string

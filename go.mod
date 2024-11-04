@@ -4,15 +4,13 @@ go 1.22.7
 
 toolchain go1.23.2
 
-replace github.com/public-cloud-wl/tools => /home/admnet/go/src/github.com/public-cloud-wl/tools
-
 require (
 	cloud.google.com/go/storage v1.45.0
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
 	github.com/hashicorp/terraform-plugin-framework v1.12.0
 	github.com/hashicorp/terraform-plugin-go v0.25.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
-	github.com/public-cloud-wl/tools v0.0.0-20241104104310-5e88bdf3cbb7
+	github.com/public-cloud-wl/tools v0.0.0-20241106085306-138ea4dcc880
 	golang.org/x/oauth2 v0.23.0
 	google.golang.org/api v0.203.0
 )
