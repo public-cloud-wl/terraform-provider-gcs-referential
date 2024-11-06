@@ -2,33 +2,82 @@ package provider
 
 import (
 	"context"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func New(version string) func() *schema.Provider {
-	return func() *schema.Provider {
-		return &schema.Provider{
-			Schema: map[string]*schema.Schema{
-				"reservator_bucket": {
-					Type:     schema.TypeString,
-					Required: true,
-				},
-			},
-			ResourcesMap: map[string]*schema.Resource{
-				"cidr-reservator_network_request": resourceServer(),
-			},
-			ConfigureContextFunc: providerConfigure,
+var _ provider.Provider = &GCSReferentialProvider{}
+
+/*var _ provider.ProviderWithFunctions = &GCSReferentialProvider{} */
+
+const ProviderName = "gcsreferential"
+const NumberOfRetry = int(10)
+const Timeout = time.Minute * 5
+
+type GCSReferentialProvider struct {
+	version string
+}
+
+// New function to create the provider
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &GCSReferentialProvider{
+			version: version,
 		}
 	}
 }
 
-func providerConfigure(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	cidrReservatorBucket := data.Get("reservator_bucket").(string)
-	var diags diag.Diagnostics
-	if cidrReservatorBucket == "" {
-		return nil, diag.Errorf("reservator_bucket is not set!")
+type GCSReferentialProviderModel struct {
+	ReferentialBucket types.String `tfsdk:"referential_bucket"`
+}
+
+func (p *GCSReferentialProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = ProviderName
+	resp.Version = p.version
+}
+
+// Define the Provider schema
+func (p *GCSReferentialProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"referential_bucket": schema.StringAttribute{
+				MarkdownDescription: "The GCS bucket name where the information from this provider will be stocked",
+				Required:            true,
+			},
+		},
+	}
+}
+
+// Configure function for the provider
+func (p *GCSReferentialProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data GCSReferentialProviderModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if data.ReferentialBucket.ValueString() == "" {
+		resp.Diagnostics.AddError("The provide must be set with referential_bucket argument", "")
+	}
+	resp.DataSourceData = data
+	resp.ResourceData = data
+}
+
+func (p *GCSReferentialProvider) Resources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		NewIdPoolResource,
+		NewIdRequestResource,
+		NewNetworkRequestResource,
 	}
 
-	return cidrReservatorBucket, diags
+}
+
+// DataSources implements provider.Provider.
+func (p *GCSReferentialProvider) DataSources(context.Context) []func() datasource.DataSource {
+	/*return []func() datasource.DataSource{}*/
+	return nil
 }
