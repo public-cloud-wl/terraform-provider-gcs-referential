@@ -69,9 +69,9 @@ func (p *GCSReferentialProvider) Configure(ctx context.Context, req provider.Con
 
 func (p *GCSReferentialProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		/*NewNetworkRequestResource,*/
 		NewIdPoolResource,
 		NewIdRequestResource,
+		NewNetworkRequestResource,
 	}
 
 }
