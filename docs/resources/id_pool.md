@@ -13,12 +13,8 @@ This resource allow you to declare a pool with a name that must be unique, you c
 ## Example Usage
 
 ```terraform
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
-
 resource "gcsreferential_id_pool" "example" {
-  for_each   = local.p
-  name       = "examplepoolmaarc${each.key}"
+  name       = "examplepoolmaarc"
   start_from = each.value.start
   end_to     = each.value.end
 }
@@ -33,8 +29,8 @@ resource "gcsreferential_id_pool" "example" {
 
 ### Optional
 
-- `end_to` (Number) The last id of the created pool
-- `start_from` (Number) The first id of the created pool
+- `end_to` (Number) The last id of the created pool, if you not set it it will be set to 9223372036854775807
+- `start_from` (Number) The first id of the created pool, if you not set it it will be set to 1
 
 ### Read-Only
 

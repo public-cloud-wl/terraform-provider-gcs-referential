@@ -39,7 +39,7 @@ func NewGeneric(BucketName string, FullFilePath string) GcpConnectorGeneric {
 }
 
 func NewNetwork(bucketName string, baseCidr string) GcpConnectorNetwork {
-	fileName := fmt.Sprintf("cidr-reservation/baseCidr-%s.json", strings.Replace(strings.Replace(baseCidr, ".", "-", -1), "/", "-", -1))
+	fileName := fmt.Sprintf("gcsreferential/cidr-reservation/baseCidr-%s.json", strings.Replace(strings.Replace(baseCidr, ".", "-", -1), "/", "-", -1))
 	return GcpConnectorNetwork{GcpConnectorGeneric{bucketName, fileName, -1}, baseCidr}
 }
 
