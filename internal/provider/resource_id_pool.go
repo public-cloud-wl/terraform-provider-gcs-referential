@@ -160,7 +160,7 @@ func deleteRemoteIdPool(ctx context.Context, data *IdPoolResourceModel, p GCSRef
 			defer gcpConnector.Unlock(ctx, lockId)
 		}
 	}
-	if err != nil {
+	if err == nil {
 		return gcpConnector.Delete(ctx)
 	} else {
 		return err
