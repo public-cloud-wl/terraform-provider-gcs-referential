@@ -94,29 +94,29 @@ func (r *IdRequestResource) Create(ctx context.Context, req resource.CreateReque
 	gcpConnector := getPoolConnector(ctx, &poolModel, r.providerData, &pool)
 	lockId, err = gcpConnector.WaitForlock(ctx, Timeout)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot put lock to create the id_request :", err.Error())
+		resp.Diagnostics.AddError("id_request creation error", "Cannot put lock to create the id_request")
 		return
 	}
 	defer gcpConnector.Unlock(ctx, lockId)
 	err = readRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot find pool to make the id_request on", err.Error())
+		resp.Diagnostics.AddError("id_request creation error", "Cannot find pool to make the id_request on")
 		return
 	}
 	_, ok := pool.Members[data.Id.ValueString()]
 	if ok {
-		resp.Diagnostics.AddError("The if of your id_request is already present in the pool, be sure you did not make any mistake, or consider to import", err.Error())
+		resp.Diagnostics.AddError("id_request creation error", "The if of your id_request is already present in the pool, be sure you did not make any mistake, or consider to import")
 		return
 	}
 	generatedId := pool.AllocateID(data.Id.ValueString())
 	if generatedId == IdPoolTools.NoID {
-		resp.Diagnostics.AddError("There is no more id available in the pool", err.Error())
+		resp.Diagnostics.AddError("id_request creation error", "There is no more id available in the pool")
 		return
 	}
 	data.RequestedId = types.Int64Value(int64(generatedId))
 	err = writeRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot update pool on the referential_bucket", err.Error())
+		resp.Diagnostics.AddError("id_request creation error", "Cannot update pool on the referential_bucket")
 		return
 	}
 	// Save data into Terraform state
@@ -136,12 +136,12 @@ func (r *IdRequestResource) Read(ctx context.Context, req resource.ReadRequest, 
 	poolModel.Name = data.Pool
 	err = readRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot find pool to make the id_request on", err.Error())
+		resp.Diagnostics.AddError("id_request read error", "Cannot find pool to make the id_request on")
 		return
 	}
 	value, ok := pool.Members[data.Id.ValueString()]
 	if !ok {
-		resp.Diagnostics.AddError("Cannot find your id_request on the pool", err.Error())
+		resp.Diagnostics.AddError("id_request read error", "Cannot find your id_request on the pool")
 		return
 	}
 	data.RequestedId = types.Int64Value(int64(value))
@@ -181,19 +181,19 @@ func (r *IdRequestResource) Delete(ctx context.Context, req resource.DeleteReque
 	gcpConnector := getPoolConnector(ctx, &poolModel, r.providerData, &pool)
 	lockId, err = gcpConnector.WaitForlock(ctx, Timeout)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot put lock to create the id_request :", err.Error())
+		resp.Diagnostics.AddError("id_request delete error", "Cannot put lock to create the id_request :")
 		return
 	}
 	defer gcpConnector.Unlock(ctx, lockId)
 
 	localerr := readRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 	if localerr != nil {
-		resp.Diagnostics.AddError("Cannot get id_pool from id_request.pool on the referential_bucket", err.Error())
+		resp.Diagnostics.AddError("id_request delete error", "Cannot get id_pool from id_request.pool on the referential_bucket")
 		return
 	}
 	value, ok := pool.Members[data.Id.ValueString()]
 	if !ok {
-		resp.Diagnostics.AddError("Cannot find your id_request in the referential_bucket", err.Error())
+		resp.Diagnostics.AddError("id_request delete error", "Cannot find your id_request in the referential_bucket")
 		return
 	}
 	pool.Release(value)
@@ -202,7 +202,7 @@ func (r *IdRequestResource) Delete(ctx context.Context, req resource.DeleteReque
 	err = writeRemoteIdPool(ctx, &poolModel, r.providerData, &pool, lockId)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot update pool on the referential_bucket", err.Error())
+		resp.Diagnostics.AddError("id_request delete error", "Cannot update pool on the referential_bucket")
 		return
 	}
 }

@@ -177,20 +177,20 @@ func (r *IdPoolResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	err = readRemoteIdPool(ctx, &data, r.providerData, &pool)
 	if err == nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Error on creation of %s it already exist, verify you did not make any mistake or consider to import", data.Name), err.Error())
+		resp.Diagnostics.AddError("id_pool create error", fmt.Sprintf("Error on creation of %s it already exist, verify you did not make any mistake or consider to import", data.Name))
 		return
 	}
 	data.Id = data.Name
 	pool = *IdPoolTools.NewIDPool(IdPoolTools.ID(data.StartFrom.ValueInt64()), IdPoolTools.ID(data.EndTo.ValueInt64()))
 	if !pool.IsValid() {
-		resp.Diagnostics.AddError("Invalid pool, please check start_from and end_to", err.Error())
+		resp.Diagnostics.AddError("id_pool create error", "Invalid pool, please check start_from and end_to")
 		return
 	}
 	emptyGoMap := map[string]attr.Value{}
 	data.Reservations, _ = types.MapValue(types.Int64Type, emptyGoMap)
 	err = writeRemoteIdPool(ctx, &data, r.providerData, &pool)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot save id_pool on referential_bucket", err.Error())
+		resp.Diagnostics.AddError("id_pool create error", "Cannot save id_pool on referential_bucket")
 		return
 	}
 
@@ -247,7 +247,7 @@ func (r *IdPoolResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	err := utils.Retry(func() error { return deleteRemoteIdPool(ctx, &data, r.providerData) }, NumberOfRetry)
 	if err != nil {
-		resp.Diagnostics.AddError("Cannot delete id_pool :", err.Error())
+		resp.Diagnostics.AddError("id_pool delete error", "Cannot delete id_pool")
 		return
 	}
 }

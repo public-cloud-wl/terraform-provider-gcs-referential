@@ -15,7 +15,7 @@ install:
 	go install -v ./...
 
 fmt:
-	go fmt .
+	go fmt ./...
 
 lint:
 	golang-lint run
